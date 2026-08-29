@@ -75,12 +75,16 @@ moving pattern when no camera exists (headless).
 The product path is the tested path — the witnesses drive `web/index.html` itself.
 
 ```
-node witness/match.witness.mjs    # PURE  12/12 — the coordinator-free wheel in node over jittered mem doors
-node witness/ux.witness.mjs       # UX    28/28 — the 2010 chrome asserted verbatim in the DOM, desktop AND mobile
-node witness/live.witness.mjs     # LIVE  15/15 — 3 real Chromium strangers: pair, chat, typing, frames, Next
+node witness/match.witness.mjs    # PURE   12/12 — the coordinator-free wheel in node over jittered mem doors
+node witness/ux.witness.mjs       # UX     28/28 — the 2010 chrome asserted verbatim in the DOM, desktop AND mobile
+node witness/live.witness.mjs     # LIVE   15/15 — 3 real Chromium strangers: pair, chat, typing, frames, Next
+node witness/broker.witness.mjs   # BROKER  4/4 — the production door: pair + chat + frames over the REAL public brokers
 ```
 
-All green 2026-08-29 (55/55). Playwright resolves from the hologram workspace next door;
+All green 2026-08-29 (59/59). The broker witness exists because of a live-caught hang:
+a frame posted before the MQTT socket finished its handshake was silently dropped —
+taking the pair's first SDP offer with it, a state ICE restart cannot escape. The door
+now queues until it can speak, and that witness holds the door shut against regression. Playwright resolves from the hologram workspace next door;
 `npm i playwright` anywhere on the resolve path works too.
 
 ## The shape of the code

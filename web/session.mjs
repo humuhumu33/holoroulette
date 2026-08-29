@@ -72,11 +72,17 @@ export async function openPair({ door, room, self, partner, initiator,
 
   if (initiator) {
     wireDc(pc.createDataChannel("pair", { ordered: true }));
-    // a lost offer is re-issued: until the channel opens, restart ICE a few times
+    // a lost offer is re-issued: until the channel opens, re-post the standing
+    // offer (restartIce cannot renegotiate from have-local-offer — the state a
+    // lost offer strands us in; a duplicate offer is idempotent for the polite
+    // side), and once an answer has landed, restart ICE for fresh candidates.
     let tries = 0;
     const iv = setInterval(() => {
       if (closed || (st.dc && st.dc.readyState === "open") || ++tries > 5) return clearInterval(iv);
-      try { pc.restartIce(); } catch {}
+      try {
+        if (pc.localDescription && !pc.remoteDescription) sig.post({ kind: "sdp", data: pc.localDescription });
+        else pc.restartIce();
+      } catch {}
     }, 3000);
   } else {
     pc.ondatachannel = (e) => wireDc(e.channel);

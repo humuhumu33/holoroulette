@@ -60,7 +60,20 @@ export function makeBrokerDoor({ secret, brokers = DEFAULT_BROKERS } = {}) {
     const topic = await doorTopic(secret, room);
     const seen = new Set();          // nonce dedup across raced brokers
     const socks = [];
+    const pending = [];              // frames posted before any socket could speak
     let closed = false;
+
+    // SPEAK ONLY THROUGH AN OPEN DOOR: a frame posted before CONNACK+SUBACK
+    // must wait, not vanish — the initiator's FIRST SDP offer and its trickle
+    // ICE live exactly in that window (a real, live-observed hang: the offer
+    // dropped, restartIce can't renegotiate from have-local-offer, the pair
+    // never opens). Queue, then flush on the first socket that becomes ready.
+    function flush() {
+      if (!pending.length) return;
+      const ready = socks.filter((s) => s.ready && s.ws.readyState === 1);
+      if (!ready.length) return;
+      for (const frame of pending.splice(0)) for (const s of ready) { try { s.ws.send(frame); } catch {} }
+    }
 
     async function deliver(payload) {
       let msg;
@@ -85,7 +98,7 @@ export function makeBrokerDoor({ secret, brokers = DEFAULT_BROKERS } = {}) {
         buf = concatU8([buf, new Uint8Array(e.data)]);
         const { packets, rest } = parsePackets(buf); buf = rest;
         for (const p of packets) {
-          if (p.type === 2) { ws.send(encodeSubscribe(1, topic)); st.ready = true; st.ping = setInterval(() => { try { ws.send(encodePing()); } catch {} }, 25_000); }
+          if (p.type === 2) { ws.send(encodeSubscribe(1, topic)); st.ready = true; st.ping = setInterval(() => { try { ws.send(encodePing()); } catch {} }, 25_000); flush(); }
           else if (p.type === 3) deliver(parsePublish(p.body).payload);
         }
       };
@@ -100,7 +113,9 @@ export function makeBrokerDoor({ secret, brokers = DEFAULT_BROKERS } = {}) {
         const iv = crypto.getRandomValues(new Uint8Array(12));
         const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, body));
         const frame = encodePublish(topic, concatU8([iv, ct]));
-        for (const s of socks) if (s.ready && s.ws.readyState === 1) { try { s.ws.send(frame); } catch {} }
+        const ready = socks.filter((s) => s.ready && s.ws.readyState === 1);
+        if (!ready.length) { pending.push(frame); if (pending.length > 64) pending.shift(); return; }
+        for (const s of ready) { try { s.ws.send(frame); } catch {} }
       },
       close: () => { closed = true; for (const s of socks) { if (s.ping) clearInterval(s.ping); try { s.ws.close(); } catch {} } },
     };

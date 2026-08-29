@@ -7,6 +7,7 @@
   "scripts": {
     "witness": "node witness/match.witness.mjs",
     "witness:live": "node witness/live.witness.mjs",
+    "witness:broker": "node witness/broker.witness.mjs",
     "witness:ux": "node witness/ux.witness.mjs",
     "serve": "node witness/signal-relay.mjs 8080"
   }

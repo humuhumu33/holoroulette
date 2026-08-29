@@ -204,7 +204,7 @@ S.cam = await openCamera();
 let session = null, pump = null, typingTimer = null, typeHideTimer = null, byeSeen = false;
 
 const mm = await makeMatchmaker({
-  self: id, door, cam: S.cam, wantCam: $("#ckCam").checked,
+  self: id, door, lobby: q.get("lobby") || "lobby", cam: S.cam, wantCam: $("#ckCam").checked,
   onCount: (n) => { S.usersOnline = n; $("#online").textContent = STR.usersOnline(n); },
   onUnpaired: () => {                        // the pair dissolved before it opened
     if (session) { const o = session; session = null; o.close(true); }
