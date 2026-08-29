@@ -28,6 +28,4 @@ export const STR = {
   youLeft: "You have disconnected. Press “Next” to find a new stranger",
   stopped: "Stopped. Press “Next” to start",
   reported: "Stranger reported. Looking for a new stranger...",
-  camMissing: "Your camera is off — strangers with “Cam required” will not see you",
-  footer: "Serverless random chat on the Hologram κ fabric — no server behind this page",
 };

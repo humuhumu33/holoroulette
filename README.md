@@ -3,7 +3,17 @@
 **Talk to a random stranger.** The 2010 roulette, reborn with **no server behind it** —
 on the Hologram κ fabric.
 
+**Live: <https://humuhumu33.github.io/holoroulette/>** — open it on two devices and they
+pair with no infrastructure in between.
+
 ![two strangers, paired live](holoroulette.png)
+
+The original page was one full-page Flash movie (Arial, white bg, the painted gray
+chrome) — this chrome matches what that movie painted, minus its ad line. On a phone the
+same page folds to one column: the two pictures side by side, the chat breathing below.
+
+<img src="holoroulette-mobile.png" width="300" alt="the same page on a phone">
+
 
 Open the page, and you are on the wheel. `Next (F9)` spins to a new stranger, `Stop (F8)`
 steps off, the chat says **Stranger:** in red and **You:** in blue, and the log still says
@@ -66,11 +76,11 @@ The product path is the tested path — the witnesses drive `web/index.html` its
 
 ```
 node witness/match.witness.mjs    # PURE  12/12 — the coordinator-free wheel in node over jittered mem doors
-node witness/ux.witness.mjs       # UX    19/19 — the 2010 chrome asserted verbatim in the DOM
+node witness/ux.witness.mjs       # UX    28/28 — the 2010 chrome asserted verbatim in the DOM, desktop AND mobile
 node witness/live.witness.mjs     # LIVE  15/15 — 3 real Chromium strangers: pair, chat, typing, frames, Next
 ```
 
-All green 2026-08-29 (46/46). Playwright resolves from the hologram workspace next door;
+All green 2026-08-29 (55/55). Playwright resolves from the hologram workspace next door;
 `npm i playwright` anywhere on the resolve path works too.
 
 ## The shape of the code

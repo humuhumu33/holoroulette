@@ -1,27 +1,31 @@
 <!doctype html>
 <!-- index.html — HOLOROULETTE: the 2010 roulette, reborn with no server.
-     One page IS the whole product. Engine contract (witnesses drive this page):
-     query params id/door/base/nocam/testpattern · window.state ·
+     One page IS the whole product. The original was one full-page Flash movie
+     (bgcolor #ffffff, Arial) — the chrome here matches its painted UI: gray
+     field, pill buttons, square chat panes, red Stranger / blue You.
+     Engine contract (witnesses drive this page): query params
+     id/door/base/nocam/testpattern · window.state ·
      window.next/stop/sendChat/leaveNet/mm/session -->
 <html><head><meta charset="utf-8">
 <title>Holoroulette</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Talk to a random stranger — serverless, on the Hologram κ fabric">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🎲</text></svg>">
 <style>
-  /* ── the 2010 chrome: gray, gradients, pills, Lucida — nothing flat ── */
+  /* ── the 2010 chrome: gray field, gradient pills, square panes, Arial ── */
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
-  body { background: #e9e9e9; color: #000; overflow: hidden;
-         font: 13px "Lucida Grande", "Segoe UI", Arial, Helvetica, sans-serif; }
-  #page { display: flex; flex-direction: column; height: 100vh; }
+  body { background: #f2f2f2; color: #000; overflow: hidden;
+         font: 13px Arial, Helvetica, sans-serif; }
+  #page { display: flex; flex-direction: column; height: 100vh; height: 100dvh;
+          padding-bottom: env(safe-area-inset-bottom); }
 
   /* header bar */
-  #bar { display: flex; align-items: center; gap: 12px; padding: 8px 12px;
+  #bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px; padding: 8px 12px;
          background: linear-gradient(#fbfbfb, #ececec); border-bottom: 1px solid #c6c6c6; }
   #logo { font-size: 21px; font-weight: bold; letter-spacing: -0.5px; margin-right: 6px; }
-  button.pill { font: 12px "Lucida Grande", "Segoe UI", Arial, sans-serif; color: #222;
-                padding: 4px 16px; border: 1px solid #8f8f8f; border-radius: 12px; cursor: pointer;
+  button.pill { font: 12px Arial, Helvetica, sans-serif; color: #222;
+                padding: 5px 16px; border: 1px solid #8f8f8f; border-radius: 12px; cursor: pointer;
                 background: linear-gradient(#ffffff, #d9d9d9);
                 box-shadow: inset 0 1px 0 rgba(255,255,255,.8); }
   button.pill:active { background: linear-gradient(#d0d0d0, #e8e8e8); }
@@ -30,22 +34,20 @@
   #online { margin-left: auto; font-size: 13px; color: #111; }
 
   /* main split: videos left, chat right */
-  #main { display: flex; flex: 1; gap: 10px; padding: 10px 12px 4px; min-height: 0; }
+  #main { display: flex; flex: 1; gap: 10px; padding: 10px 12px; min-height: 0; }
   #left { width: 324px; flex: none; display: flex; flex-direction: column; }
   .vlabel { font-size: 10px; color: #555; letter-spacing: .04em; margin: 2px 0 2px 1px; }
   .vbox { width: 320px; height: 240px; background: #1b1b1b; border: 1px solid #8f8f8f;
           position: relative; overflow: hidden; }
   .vbox video, .vbox img { position: absolute; inset: 0; width: 100%; height: 100%;
                            object-fit: cover; background: #1b1b1b; }
-  .vbox .off { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-               color: #777; font-size: 11px; text-align: center; padding: 10px; }
   #leftOpts { display: flex; gap: 12px; margin: 8px 0 2px 1px; }
   #leftLinks { display: flex; gap: 14px; justify-content: center; margin-top: 8px; }
   #leftLinks a { color: #1a4fba; font-size: 11px; }
 
   /* chat */
   #right { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-  #log { flex: 1; background: #fff; border: 1px solid #9a9a9a; border-radius: 2px;
+  #log { flex: 1; background: #fff; border: 1px solid #9a9a9a;
          padding: 8px 10px; overflow-y: auto; font-size: 13px; line-height: 1.45; }
   #log .sys { font-style: italic; color: #3c3c3c; }
   #log .sys::before { content: "> "; font-style: normal; }
@@ -53,11 +55,23 @@
   #log .me b { color: #0000cc; }
   #typing { height: 14px; font-size: 10px; color: #555; text-align: center; visibility: hidden; }
   #typing.on { visibility: visible; }
-  #say { height: 52px; resize: none; border: 1px solid #9a9a9a; border-radius: 2px;
-         padding: 6px 8px; font: 13px "Lucida Grande", "Segoe UI", Arial, sans-serif; outline: none; }
+  #say { height: 52px; resize: none; border: 1px solid #9a9a9a;
+         padding: 6px 8px; font: 13px Arial, Helvetica, sans-serif; outline: none; }
 
-  #foot { text-align: center; padding: 6px 0 10px; }
-  #foot a { color: #1a4fba; font-size: 12px; }
+  /* ── mobile: one column, the two pictures side by side, chat below ── */
+  @media (max-width: 700px) {
+    #bar { padding: 6px 8px; gap: 8px; }
+    #logo { font-size: 18px; }
+    button.pill { padding: 8px 12px; }        /* finger-sized */
+    #main { flex-direction: column; padding: 8px; gap: 6px; }
+    #left { width: 100%; display: grid; grid-template-columns: 1fr 1fr;
+            gap: 0 8px; }
+    #lbPartner { grid-area: 1 / 1; } #boxP { grid-area: 2 / 1; }
+    #lbYou     { grid-area: 1 / 2; } #boxY { grid-area: 2 / 2; }
+    .vbox { width: 100%; height: auto; aspect-ratio: 4 / 3; }
+    #leftOpts, #leftLinks { display: none; }  /* the small print stays off small screens */
+    #say { height: 44px; font-size: 16px; }   /* 16px: no iOS focus zoom */
+  }
 </style></head><body>
 <div id="page">
   <div id="bar">
@@ -72,9 +86,9 @@
   <div id="main">
     <div id="left">
       <div class="vlabel" id="lbPartner"></div>
-      <div class="vbox"><img id="pframe" alt=""><div class="off" id="poff"></div></div>
+      <div class="vbox" id="boxP"><img id="pframe" alt=""></div>
       <div class="vlabel" id="lbYou"></div>
-      <div class="vbox"><video id="me" autoplay muted playsinline></video><div class="off" id="moff"></div></div>
+      <div class="vbox" id="boxY"><video id="me" autoplay muted playsinline></video></div>
       <div id="leftOpts">
         <label class="ck"><input type="checkbox" id="ckStart"> <span id="lbStart"></span></label>
         <label class="ck"><input type="checkbox" id="ckClean" checked> <span id="lbClean"></span></label>
@@ -90,7 +104,6 @@
       <textarea id="say" autocomplete="off"></textarea>
     </div>
   </div>
-  <div id="foot"><a href="https://github.com/humuhumu33/televoid" id="lnFoot"></a></div>
 </div>
 <script type="module">
 import { makeMatchmaker } from "./roulette.mjs";
@@ -113,9 +126,8 @@ $("#lbCam").textContent = STR.camRequired;  $("#lbPartner").textContent = STR.pa
 $("#lbYou").textContent = STR.you;          $("#lbStart").textContent = STR.autoStart;
 $("#lbClean").textContent = STR.cleanChatlog; $("#lbSound").textContent = STR.chatSounds;
 $("#lnLayout").textContent = STR.differentLayout; $("#lnAgree").textContent = STR.agreement;
-$("#lnContact").textContent = STR.contacts; $("#lnFoot").textContent = STR.footer;
+$("#lnContact").textContent = STR.contacts;
 $("#typing").textContent = STR.typing;      $("#online").textContent = STR.usersOnline(1);
-$("#poff").textContent = "";                 $("#moff").textContent = "";
 document.title = NAME;
 
 if ("serviceWorker" in navigator && q.get("door") !== "relay")
@@ -187,7 +199,6 @@ async function openCamera() {
   return false;
 }
 S.cam = await openCamera();
-if (!S.cam) { $("#moff").textContent = "camera is off"; sys(STR.camMissing); }
 
 // ── matchmaker + session glue ────────────────────────────────────────────────
 let session = null, pump = null, typingTimer = null, typeHideTimer = null, byeSeen = false;
@@ -212,7 +223,7 @@ const mm = await makeMatchmaker({
           const url = URL.createObjectURL(new Blob([body], { type: "image/jpeg" }));
           const img = $("#pframe"); const old = img.src;
           img.onload = () => { if (old && old.startsWith("blob:")) URL.revokeObjectURL(old); };
-          img.src = url; $("#poff").textContent = ""; }
+          img.src = url; }
         else if (hdr.t === "bye") { byeSeen = true; s.close(true); }
       },
       onOpen: () => {

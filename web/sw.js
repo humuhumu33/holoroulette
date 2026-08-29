@@ -1,6 +1,6 @@
 // sw.js — instant reload: the room remembers itself (cache-first shell).
 // ⚠ bump CACHE per deploy (the televoid staleness law).
-const CACHE = "holoroulette1";
+const CACHE = "holoroulette2";
 const SHELL = ["./", "./index.html", "./strings.mjs", "./roulette.mjs", "./session.mjs",
   "./wire.mjs", "./broker-door.mjs", "../vendor/holo-fabric.mjs"];
 self.addEventListener("install", (e) => {

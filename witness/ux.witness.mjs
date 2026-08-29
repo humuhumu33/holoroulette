@@ -58,11 +58,18 @@ ok(await T("#lnLayout") === "Different layout" && await T("#lnAgree") === "Agree
 const chrome = await page.evaluate(() => ({
   body: getComputedStyle(document.body).backgroundColor,
   log: getComputedStyle(document.querySelector("#log")).backgroundColor,
+  logRadius: getComputedStyle(document.querySelector("#log")).borderRadius,
+  font: getComputedStyle(document.body).fontFamily,
   sysItalic: getComputedStyle(document.querySelector("#log .sys")).fontStyle,
 }));
-ok(chrome.body === "rgb(233, 233, 233)" && chrome.log === "rgb(255, 255, 255)",
-  "gray chrome, white chat box — the era palette", JSON.stringify(chrome));
+ok(chrome.body === "rgb(242, 242, 242)" && chrome.log === "rgb(255, 255, 255)",
+  "gray chrome, white chat box — the era palette", JSON.stringify({ body: chrome.body, log: chrome.log }));
+ok(chrome.logRadius === "0px" && /Arial/.test(chrome.font),
+  "square chat panes, Arial — the Flash-era text look (only the pills are round)");
 ok(chrome.sysItalic === "italic", "status lines whisper in italics");
+ok(await page.evaluate(() => !document.querySelector("#foot") &&
+    ![...document.querySelectorAll("body *")].some((e) => e.childElementCount === 0 && /fabric|serverless/i.test(e.textContent))),
+  "no footer ad line, no tech talk — nothing the 2010 page would not say");
 ok(await page.evaluate(() => [...document.querySelectorAll("#log .sys")].some((d) => d.textContent.includes("Looking for a random stranger"))),
   "on entry the log says it is looking for a random stranger");
 ok(await T("#typing") === "Your partner is typing", "the typing whisper is “Your partner is typing”");
@@ -77,6 +84,35 @@ await page.waitForFunction(() => window.state.status === "seeking", null, { time
 ok(await page.evaluate(() => window.state.status === "seeking"), "F9 SPINS again");
 ok(await page.evaluate(() => [...document.querySelectorAll("#log .sys")].some((d) => d.textContent.includes("Stopped. Press"))),
   "stopping told you so in the log, the polite way");
+
+// ── mobile: one column, two pictures side by side, chat still breathing ──────
+const mob = await (await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
+await mob.goto(`http://127.0.0.1:${PORT}/web/index.html?door=relay&nocam=1&id=ux-m`);
+await mob.waitForFunction(() => window.state && window.state.status, null, { timeout: 10000 });
+const M = await mob.evaluate(() => {
+  const r = (s) => document.querySelector(s).getBoundingClientRect();
+  const bp = r("#boxP"), by = r("#boxY"), log = r("#log"), say = r("#say"), next = r("#btnNext");
+  return {
+    noHScroll: document.documentElement.scrollWidth <= window.innerWidth + 1,
+    sideBySide: Math.abs(bp.top - by.top) < 2 && bp.right <= by.left + 1,
+    aspect: Math.abs(bp.width / bp.height - 4 / 3) < 0.02,
+    fitsWidth: by.right <= window.innerWidth + 1,
+    smallPrintHidden: getComputedStyle(document.querySelector("#leftOpts")).display === "none"
+                   && getComputedStyle(document.querySelector("#leftLinks")).display === "none",
+    logVisible: log.height > 120 && log.top > by.bottom,
+    sayOnScreen: say.bottom <= window.innerHeight + 1,
+    sayFont: getComputedStyle(document.querySelector("#say")).fontSize,
+    pillTappable: next.height >= 30,
+  };
+});
+ok(M.noHScroll, "mobile: the page never scrolls sideways");
+ok(M.sideBySide && M.aspect && M.fitsWidth, "mobile: Partner and You sit side by side, 4:3, inside the screen");
+ok(M.smallPrintHidden, "mobile: the small print (options row, little links) stays off small screens");
+ok(M.logVisible && M.sayOnScreen, "mobile: the chat log breathes below the pictures and the input stays on screen");
+ok(M.sayFont === "16px", "mobile: 16px input — iOS will not zoom the page on focus", M.sayFont);
+ok(M.pillTappable, "mobile: the pills are finger-sized");
+await mob.keyboard.press("F9");   // the keys still work where a keyboard exists
+ok(await mob.evaluate(() => window.state.status === "seeking"), "mobile: the wheel still spins");
 
 await browser.close();
 server.close();
