@@ -36,9 +36,9 @@ function makeHub() {
   };
 }
 
-async function spin({ id, hub, cam = true, wantCam = false }) {
+async function spin({ id, hub, cam = true, wantCam = false, kind = "human", wants = "both" }) {
   const pairs = [];
-  const mm = await makeMatchmaker({ self: id, door: hub.door, cam, wantCam,
+  const mm = await makeMatchmaker({ self: id, door: hub.door, cam, wantCam, kind, wants,
     onPaired: (p) => pairs.push(p) });
   return { id, mm, pairs, last: () => pairs[pairs.length - 1] || null };
 }
@@ -106,6 +106,45 @@ async function spin({ id, hub, cam = true, wantCam = false }) {
   ok(a.mm.count() === 1, "a clean bye leaves the room at once", "count=" + a.mm.count());
   a.mm.leave();
   ok(HERE_TTL <= 15000, "silent ghosts age out on a short TTL (no leaveNet ghost trap)", HERE_TTL + "ms");
+}
+
+// ── 5 · Chat with: Humans / AI / Both routes the wheel ───────────────────────
+{
+  const hub = makeHub();
+  const seekAi = await spin({ id: "aa-seek-ai", hub, wants: "ai" });          // human who only takes AI
+  const onlyHu = await spin({ id: "bb-only-hu", hub, wants: "human" });       // human who only takes humans
+  seekAi.mm.start(); onlyHu.mm.start();
+  await sleep(2500);
+  ok(!seekAi.last() && !onlyHu.last(),
+    "a Humans-only and an AI-only stranger NEVER pair (both preferences hold, both directions)");
+
+  const bot = await spin({ id: "zz-bot", hub, kind: "ai", wants: "both" });   // an AI person arrives
+  bot.mm.start();
+  await sleep(3000);
+  ok(seekAi.last()?.partner === "zz-bot" && bot.last()?.partner === "aa-seek-ai",
+    "the AI-seeking stranger pairs the moment an AI person joins the lobby");
+  ok(!onlyHu.last(), "the Humans-only stranger is untouched by the AI (still on the wheel)");
+
+  const hu = await spin({ id: "cc-human", hub, wants: "both" });              // a plain human arrives
+  hu.mm.start();
+  await sleep(3000);
+  ok(onlyHu.last()?.partner === "cc-human" && hu.last()?.partner === "bb-only-hu",
+    "…and pairs the moment a human does — Both takes whoever comes");
+  for (const p of [seekAi, onlyHu, bot, hu]) p.mm.leave();
+}
+
+// ── 6 · setWants retargets a live seek ───────────────────────────────────────
+{
+  const hub = makeHub();
+  const a = await spin({ id: "sw-a", hub, wants: "ai" });
+  const b = await spin({ id: "sw-b", hub, wants: "both" });
+  a.mm.start(); b.mm.start();
+  await sleep(2000);
+  ok(!a.last(), "wanting AI in an all-human lobby, the wheel just spins");
+  a.mm.setWants("both");
+  await sleep(3000);
+  ok(a.last()?.partner === "sw-b", "flipping the toggle to Both pairs on the very next beacon");
+  a.mm.leave(); b.mm.leave();
 }
 
 console.log(`\n${pass} ok, ${fail} failed`);

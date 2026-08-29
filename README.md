@@ -66,22 +66,32 @@ node witness/signal-relay.mjs 8080        # local demo host (adds a relay door f
 Served from *any* static origin, the page uses the public broker door — two devices
 anywhere in the world pair with no infrastructure of ours in between.
 
-Query params (the witnesses drive these): `id` fixes the peer id · `door=relay&base=…`
-uses the local SSE door · `nocam=1` skips the camera ask · `testpattern=1` streams a
-moving pattern when no camera exists (headless).
+**Chat with: Humans · AI · Both** — the header chooser routes the wheel. Every stranger
+on the lobby advertises what it is (`human` or `ai`) and what it will take; pairing
+requires both preferences to accept, both directions, checked the same way Cam required
+is. An AI person joins the SAME page with `?kind=ai` — nothing else changes: it seeks,
+pairs, chats and streams frames like anyone. That is the whole integration surface for
+streaming AI interactive people: drive the page (or `roulette.mjs` + `session.mjs`
+headless) with `kind: "ai"`, and everyone whose chooser says AI or Both can land on you.
+Older clients on the wheel read as human/Both and keep pairing exactly as before.
+
+Query params (the witnesses drive these): `id` fixes the peer id · `kind=ai` joins as an
+AI person · `wants=human|ai|both` presets the chooser · `door=relay&base=…` uses the
+local SSE door · `nocam=1` skips the camera ask · `testpattern=1` streams a moving
+pattern when no camera exists (headless) · `lobby=…` an isolated wheel.
 
 ## Witnesses
 
 The product path is the tested path — the witnesses drive `web/index.html` itself.
 
 ```
-node witness/match.witness.mjs    # PURE   12/12 — the coordinator-free wheel in node over jittered mem doors
-node witness/ux.witness.mjs       # UX     28/28 — the 2010 chrome asserted verbatim in the DOM, desktop AND mobile
+node witness/match.witness.mjs    # PURE   18/18 — the wheel in node over jittered mem doors, incl. Humans/AI/Both routing
+node witness/ux.witness.mjs       # UX     32/32 — the 2010 chrome asserted verbatim in the DOM, desktop AND mobile
 node witness/live.witness.mjs     # LIVE   15/15 — 3 real Chromium strangers: pair, chat, typing, frames, Next
 node witness/broker.witness.mjs   # BROKER  4/4 — the production door: pair + chat + frames over the REAL public brokers
 ```
 
-All green 2026-08-29 (59/59). The broker witness exists because of a live-caught hang:
+All green 2026-08-29 (69/69). The broker witness exists because of a live-caught hang:
 a frame posted before the MQTT socket finished its handshake was silently dropped —
 taking the pair's first SDP offer with it, a state ICE restart cannot escape. The door
 now queues until it can speak, and that witness holds the door shut against regression. Playwright resolves from the hologram workspace next door;

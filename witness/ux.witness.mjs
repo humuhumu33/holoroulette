@@ -34,6 +34,18 @@ ok(await T("#btnReport") === "Report", "the third pill is “Report”");
 ok(await T("#lbAuto") === "Auto reconnect" && await T("#lbCam") === "Cam required",
   "header checkboxes: Auto reconnect · Cam required");
 ok(/^Users online: \d+$/.test(await T("#online")), "the count reads “Users online: N”", await T("#online"));
+const withCtl = await page.evaluate(() => ({
+  label: document.querySelector("#lbWithText").textContent,
+  options: [...document.querySelectorAll("#selWith option")].map((o) => o.textContent),
+  value: document.querySelector("#selWith").value,
+}));
+ok(withCtl.label === "Chat with:" && withCtl.options.join("·") === "Humans·AI·Both",
+  "the wheel chooser reads “Chat with: Humans · AI · Both”", JSON.stringify(withCtl.options));
+ok(withCtl.value === "both", "and Both is the default — the wheel takes whoever comes");
+await page.selectOption("#selWith", "ai");
+ok(await page.evaluate(() => window.state.wants === "ai"),
+  "flipping it retargets the live matchmaker (state.wants follows)");
+await page.selectOption("#selWith", "both");
 const pill = await page.evaluate(() => { const b = document.querySelector("#btnNext"); const c = getComputedStyle(b);
   return { radius: c.borderRadius, grad: c.backgroundImage.includes("gradient") }; });
 ok(pill.radius === "12px" && pill.grad, "the buttons are era pills: rounded, gradient-filled", JSON.stringify(pill));
@@ -99,6 +111,8 @@ const M = await mob.evaluate(() => {
     fitsWidth: by.right <= window.innerWidth + 1,
     smallPrintHidden: getComputedStyle(document.querySelector("#leftOpts")).display === "none"
                    && getComputedStyle(document.querySelector("#leftLinks")).display === "none",
+    withVisible: (() => { const r = document.querySelector("#selWith").getBoundingClientRect();
+      return r.width > 0 && r.right <= window.innerWidth + 1; })(),
     logVisible: log.height > 120 && log.top > by.bottom,
     sayOnScreen: say.bottom <= window.innerHeight + 1,
     sayFont: getComputedStyle(document.querySelector("#say")).fontSize,
@@ -108,6 +122,7 @@ const M = await mob.evaluate(() => {
 ok(M.noHScroll, "mobile: the page never scrolls sideways");
 ok(M.sideBySide && M.aspect && M.fitsWidth, "mobile: Partner and You sit side by side, 4:3, inside the screen");
 ok(M.smallPrintHidden, "mobile: the small print (options row, little links) stays off small screens");
+ok(M.withVisible, "mobile: the Chat with chooser stays on screen (it picks who you meet)");
 ok(M.logVisible && M.sayOnScreen, "mobile: the chat log breathes below the pictures and the input stays on screen");
 ok(M.sayFont === "16px", "mobile: 16px input — iOS will not zoom the page on focus", M.sayFont);
 ok(M.pillTappable, "mobile: the pills are finger-sized");

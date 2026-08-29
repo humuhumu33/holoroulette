@@ -31,6 +31,8 @@
   button.pill:active { background: linear-gradient(#d0d0d0, #e8e8e8); }
   label.ck { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #333;
              cursor: pointer; user-select: none; }
+  #selWith { font: 12px Arial, Helvetica, sans-serif; color: #222; border: 1px solid #8f8f8f;
+             background: #fff; padding: 2px 3px; }
   #online { margin-left: auto; font-size: 13px; color: #111; }
 
   /* main split: videos left, chat right */
@@ -81,6 +83,10 @@
     <button class="pill" id="btnReport"></button>
     <label class="ck"><input type="checkbox" id="ckAuto"> <span id="lbAuto"></span></label>
     <label class="ck"><input type="checkbox" id="ckCam"> <span id="lbCam"></span></label>
+    <label class="ck" id="lbWith"><span id="lbWithText"></span>
+      <select id="selWith">
+        <option value="human"></option><option value="ai"></option><option value="both"></option>
+      </select></label>
     <span id="online"></span>
   </div>
   <div id="main">
@@ -114,7 +120,9 @@ const q = new URLSearchParams(location.search);
 const id = q.get("id") || "hr-" + Math.random().toString(36).slice(2, 9);
 const base = q.get("base") || location.origin;
 
-const S = (window.state = { id, status: "idle", partner: null, usersOnline: 1,
+const kind = q.get("kind") === "ai" ? "ai" : "human";   // an AI person joins the SAME page with ?kind=ai
+const wants0 = ["human", "ai", "both"].includes(q.get("wants")) ? q.get("wants") : "both";
+const S = (window.state = { id, kind, wants: wants0, status: "idle", partner: null, usersOnline: 1,
   chat: [], framesIn: 0, framesOut: 0, lastKappa: null, partnerTyping: false, cam: false, err: null });
 window.onerror = (m) => (S.err = String(m));
 const $ = (s) => document.querySelector(s);
@@ -123,6 +131,10 @@ const $ = (s) => document.querySelector(s);
 $("#btnNext").textContent = STR.next;       $("#btnStop").textContent = STR.stop;
 $("#btnReport").textContent = STR.report;   $("#lbAuto").textContent = STR.autoReconnect;
 $("#lbCam").textContent = STR.camRequired;  $("#lbPartner").textContent = STR.partner;
+$("#lbWithText").textContent = STR.chatWith;
+$('#selWith option[value="human"]').textContent = STR.humans;
+$('#selWith option[value="ai"]').textContent = STR.ai;
+$('#selWith option[value="both"]').textContent = STR.both;
 $("#lbYou").textContent = STR.you;          $("#lbStart").textContent = STR.autoStart;
 $("#lbClean").textContent = STR.cleanChatlog; $("#lbSound").textContent = STR.chatSounds;
 $("#lnLayout").textContent = STR.differentLayout; $("#lnAgree").textContent = STR.agreement;
@@ -203,8 +215,10 @@ S.cam = await openCamera();
 // ── matchmaker + session glue ────────────────────────────────────────────────
 let session = null, pump = null, typingTimer = null, typeHideTimer = null, byeSeen = false;
 
+$("#selWith").value = wants0;
 const mm = await makeMatchmaker({
   self: id, door, lobby: q.get("lobby") || "lobby", cam: S.cam, wantCam: $("#ckCam").checked,
+  kind, wants: wants0,
   onCount: (n) => { S.usersOnline = n; $("#online").textContent = STR.usersOnline(n); },
   onUnpaired: () => {                        // the pair dissolved before it opened
     if (session) { const o = session; session = null; o.close(true); }
@@ -304,6 +318,7 @@ $("#btnNext").onclick = window.next;
 $("#btnStop").onclick = window.stop;
 $("#btnReport").onclick = window.report;
 $("#ckCam").onchange = () => mm.setWantCam($("#ckCam").checked);
+$("#selWith").onchange = () => { S.wants = $("#selWith").value; mm.setWants(S.wants); };
 window.addEventListener("keydown", (e) => {
   if (e.key === "F9") { e.preventDefault(); window.next(); }
   else if (e.key === "F8") { e.preventDefault(); window.stop(); }
