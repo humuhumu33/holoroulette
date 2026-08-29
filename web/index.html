@@ -1,0 +1,315 @@
+<!doctype html>
+<!-- index.html — HOLOROULETTE: the 2010 roulette, reborn with no server.
+     One page IS the whole product. Engine contract (witnesses drive this page):
+     query params id/door/base/nocam/testpattern · window.state ·
+     window.next/stop/sendChat/leaveNet/mm/session -->
+<html><head><meta charset="utf-8">
+<title>Holoroulette</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Talk to a random stranger — serverless, on the Hologram κ fabric">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🎲</text></svg>">
+<style>
+  /* ── the 2010 chrome: gray, gradients, pills, Lucida — nothing flat ── */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: #e9e9e9; color: #000; overflow: hidden;
+         font: 13px "Lucida Grande", "Segoe UI", Arial, Helvetica, sans-serif; }
+  #page { display: flex; flex-direction: column; height: 100vh; }
+
+  /* header bar */
+  #bar { display: flex; align-items: center; gap: 12px; padding: 8px 12px;
+         background: linear-gradient(#fbfbfb, #ececec); border-bottom: 1px solid #c6c6c6; }
+  #logo { font-size: 21px; font-weight: bold; letter-spacing: -0.5px; margin-right: 6px; }
+  button.pill { font: 12px "Lucida Grande", "Segoe UI", Arial, sans-serif; color: #222;
+                padding: 4px 16px; border: 1px solid #8f8f8f; border-radius: 12px; cursor: pointer;
+                background: linear-gradient(#ffffff, #d9d9d9);
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.8); }
+  button.pill:active { background: linear-gradient(#d0d0d0, #e8e8e8); }
+  label.ck { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #333;
+             cursor: pointer; user-select: none; }
+  #online { margin-left: auto; font-size: 13px; color: #111; }
+
+  /* main split: videos left, chat right */
+  #main { display: flex; flex: 1; gap: 10px; padding: 10px 12px 4px; min-height: 0; }
+  #left { width: 324px; flex: none; display: flex; flex-direction: column; }
+  .vlabel { font-size: 10px; color: #555; letter-spacing: .04em; margin: 2px 0 2px 1px; }
+  .vbox { width: 320px; height: 240px; background: #1b1b1b; border: 1px solid #8f8f8f;
+          position: relative; overflow: hidden; }
+  .vbox video, .vbox img { position: absolute; inset: 0; width: 100%; height: 100%;
+                           object-fit: cover; background: #1b1b1b; }
+  .vbox .off { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+               color: #777; font-size: 11px; text-align: center; padding: 10px; }
+  #leftOpts { display: flex; gap: 12px; margin: 8px 0 2px 1px; }
+  #leftLinks { display: flex; gap: 14px; justify-content: center; margin-top: 8px; }
+  #leftLinks a { color: #1a4fba; font-size: 11px; }
+
+  /* chat */
+  #right { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #log { flex: 1; background: #fff; border: 1px solid #9a9a9a; border-radius: 2px;
+         padding: 8px 10px; overflow-y: auto; font-size: 13px; line-height: 1.45; }
+  #log .sys { font-style: italic; color: #3c3c3c; }
+  #log .sys::before { content: "> "; font-style: normal; }
+  #log .stranger b { color: #e00000; }
+  #log .me b { color: #0000cc; }
+  #typing { height: 14px; font-size: 10px; color: #555; text-align: center; visibility: hidden; }
+  #typing.on { visibility: visible; }
+  #say { height: 52px; resize: none; border: 1px solid #9a9a9a; border-radius: 2px;
+         padding: 6px 8px; font: 13px "Lucida Grande", "Segoe UI", Arial, sans-serif; outline: none; }
+
+  #foot { text-align: center; padding: 6px 0 10px; }
+  #foot a { color: #1a4fba; font-size: 12px; }
+</style></head><body>
+<div id="page">
+  <div id="bar">
+    <span id="logo">Holoroulette</span>
+    <button class="pill" id="btnNext"></button>
+    <button class="pill" id="btnStop"></button>
+    <button class="pill" id="btnReport"></button>
+    <label class="ck"><input type="checkbox" id="ckAuto"> <span id="lbAuto"></span></label>
+    <label class="ck"><input type="checkbox" id="ckCam"> <span id="lbCam"></span></label>
+    <span id="online"></span>
+  </div>
+  <div id="main">
+    <div id="left">
+      <div class="vlabel" id="lbPartner"></div>
+      <div class="vbox"><img id="pframe" alt=""><div class="off" id="poff"></div></div>
+      <div class="vlabel" id="lbYou"></div>
+      <div class="vbox"><video id="me" autoplay muted playsinline></video><div class="off" id="moff"></div></div>
+      <div id="leftOpts">
+        <label class="ck"><input type="checkbox" id="ckStart"> <span id="lbStart"></span></label>
+        <label class="ck"><input type="checkbox" id="ckClean" checked> <span id="lbClean"></span></label>
+        <label class="ck"><input type="checkbox" id="ckSound" checked> <span id="lbSound"></span></label>
+      </div>
+      <div id="leftLinks">
+        <a href="#" id="lnLayout"></a><a href="#" id="lnAgree"></a><a href="#" id="lnContact"></a>
+      </div>
+    </div>
+    <div id="right">
+      <div id="log"></div>
+      <div id="typing"></div>
+      <textarea id="say" autocomplete="off"></textarea>
+    </div>
+  </div>
+  <div id="foot"><a href="https://github.com/humuhumu33/televoid" id="lnFoot"></a></div>
+</div>
+<script type="module">
+import { makeMatchmaker } from "./roulette.mjs";
+import { openPair } from "./session.mjs";
+import { STR, NAME } from "./strings.mjs";
+
+const q = new URLSearchParams(location.search);
+const id = q.get("id") || "hr-" + Math.random().toString(36).slice(2, 9);
+const base = q.get("base") || location.origin;
+
+const S = (window.state = { id, status: "idle", partner: null, usersOnline: 1,
+  chat: [], framesIn: 0, framesOut: 0, lastKappa: null, partnerTyping: false, cam: false, err: null });
+window.onerror = (m) => (S.err = String(m));
+const $ = (s) => document.querySelector(s);
+
+// the chrome speaks strings.mjs verbatim (UX witness asserts them)
+$("#btnNext").textContent = STR.next;       $("#btnStop").textContent = STR.stop;
+$("#btnReport").textContent = STR.report;   $("#lbAuto").textContent = STR.autoReconnect;
+$("#lbCam").textContent = STR.camRequired;  $("#lbPartner").textContent = STR.partner;
+$("#lbYou").textContent = STR.you;          $("#lbStart").textContent = STR.autoStart;
+$("#lbClean").textContent = STR.cleanChatlog; $("#lbSound").textContent = STR.chatSounds;
+$("#lnLayout").textContent = STR.differentLayout; $("#lnAgree").textContent = STR.agreement;
+$("#lnContact").textContent = STR.contacts; $("#lnFoot").textContent = STR.footer;
+$("#typing").textContent = STR.typing;      $("#online").textContent = STR.usersOnline(1);
+$("#poff").textContent = "";                 $("#moff").textContent = "";
+document.title = NAME;
+
+if ("serviceWorker" in navigator && q.get("door") !== "relay")
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
+
+// ── the door: sealed public brokers by default; local SSE relay for witnesses ─
+async function relayDoor(room, self, onMsg) {
+  const es = new EventSource(`${base}/signal?room=${encodeURIComponent(room)}&peer=${encodeURIComponent(self)}`);
+  es.onmessage = (e) => { try { onMsg(JSON.parse(e.data)); } catch {} };
+  // SUBSCRIBE BEFORE SPEAKING (the once-observed lost-offer race)
+  await new Promise((res) => { es.onopen = res; setTimeout(res, 2000); });
+  return {
+    post: (msg) => fetch(`${base}/signal?room=${encodeURIComponent(room)}&peer=${encodeURIComponent(self)}`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(msg) }).catch(() => {}),
+    close: () => { try { es.close(); } catch {} },
+  };
+}
+const door = q.get("door") === "relay" ? relayDoor
+  : (await import("./broker-door.mjs")).makeBrokerDoor({ secret: "holoroulette" });
+
+// ── the log ──────────────────────────────────────────────────────────────────
+const log = $("#log");
+function line(cls, who, text) {
+  const d = document.createElement("div"); d.className = cls;
+  if (who) { const b = document.createElement("b"); b.textContent = who + " ";
+    d.appendChild(b); d.appendChild(document.createTextNode(text)); }
+  else d.textContent = text;
+  log.appendChild(d); log.scrollTop = log.scrollHeight;
+}
+const sys = (t) => line("sys", null, t);
+
+// chat sound: a short soft blip, made of math, born on first gesture
+let actx = null;
+function blip() {
+  if (!$("#ckSound").checked) return;
+  try {
+    actx ||= new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = 880; g.gain.setValueAtTime(0.12, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.12);
+    o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.13);
+  } catch {}
+}
+
+// ── my picture: the real camera, or the test pattern (witness/no-cam path) ───
+const meVid = $("#me");
+let srcCanvas = null;                       // what the frame pump reads from
+const stage = document.createElement("canvas"); stage.width = 320; stage.height = 240;
+const sctx = stage.getContext("2d");
+async function openCamera() {
+  if (q.get("nocam")) return false;
+  try {
+    const ms = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 }, audio: false });
+    meVid.srcObject = ms; srcCanvas = "video";
+    return true;
+  } catch {}
+  if (q.get("testpattern")) {               // headless witness: a moving pattern IS the camera
+    const c = document.createElement("canvas"); c.width = 320; c.height = 240;
+    const cx = c.getContext("2d"); let f = 0;
+    setInterval(() => { f++;
+      cx.fillStyle = `hsl(${(f * 5) % 360} 55% 45%)`; cx.fillRect(0, 0, 320, 240);
+      cx.fillStyle = "#fff"; cx.font = "bold 28px monospace"; cx.fillText(id + " " + f, 20, 130);
+    }, 100);
+    srcCanvas = c;
+    const st2 = c.captureStream ? c.captureStream(10) : null;   // self view only; frames go via toBlob
+    if (st2) meVid.srcObject = st2;
+    return true;
+  }
+  return false;
+}
+S.cam = await openCamera();
+if (!S.cam) { $("#moff").textContent = "camera is off"; sys(STR.camMissing); }
+
+// ── matchmaker + session glue ────────────────────────────────────────────────
+let session = null, pump = null, typingTimer = null, typeHideTimer = null, byeSeen = false;
+
+const mm = await makeMatchmaker({
+  self: id, door, cam: S.cam, wantCam: $("#ckCam").checked,
+  onCount: (n) => { S.usersOnline = n; $("#online").textContent = STR.usersOnline(n); },
+  onUnpaired: () => {                        // the pair dissolved before it opened
+    if (session) { const o = session; session = null; o.close(true); }
+    clearPartner(); S.status = "seeking";
+  },
+  onPaired: async ({ partner, room, initiator }) => {
+    if (session) { const o = session; session = null; o.close(true); }
+    S.status = "connecting"; byeSeen = false;
+    const s = await openPair({ door, room, self: id, partner, initiator,
+      onObject: (hdr, body, kappa) => {
+        S.lastKappa = kappa;
+        if (hdr.t === "chat") { S.chat.push({ from: "stranger", text: hdr.text });
+          line("stranger", STR.strangerLabel, hdr.text); hideTyping(); blip(); }
+        else if (hdr.t === "typing") showTyping();
+        else if (hdr.t === "vf") { S.framesIn++;
+          const url = URL.createObjectURL(new Blob([body], { type: "image/jpeg" }));
+          const img = $("#pframe"); const old = img.src;
+          img.onload = () => { if (old && old.startsWith("blob:")) URL.revokeObjectURL(old); };
+          img.src = url; $("#poff").textContent = ""; }
+        else if (hdr.t === "bye") { byeSeen = true; s.close(true); }
+      },
+      onOpen: () => {
+        if (session !== s) return;
+        S.status = "connected"; S.partner = partner;
+        if ($("#ckClean").checked) { log.innerHTML = ""; S.chat = []; }
+        sys(STR.connected);
+        startPump();
+      },
+      onClose: () => { if (session === s) strangerGone(); },
+    });
+    session = s;
+    // the accept can be lost, the pipe can die aborning: respin, never hang
+    setTimeout(() => { if (session === s && !s.isOpen()) { s.close(true); if (session === s) { session = null; mm.failPair(); sys(STR.looking); } } }, 12000);
+  },
+});
+window.mm = mm; window.session = () => session;
+
+function startPump() {
+  stopPump();
+  let seq = 0;
+  pump = setInterval(() => {
+    if (!session || !session.isOpen() || !S.cam) return;
+    try {
+      if (srcCanvas === "video") sctx.drawImage(meVid, 0, 0, 320, 240);
+      else if (srcCanvas) sctx.drawImage(srcCanvas, 0, 0, 320, 240);
+      else return;
+      stage.toBlob(async (b) => {
+        if (!b || !session || !session.isOpen()) return;
+        session.send({ t: "vf", seq: seq++ }, new Uint8Array(await b.arrayBuffer()));
+        S.framesOut++;
+      }, "image/jpeg", 0.6);
+    } catch {}
+  }, 125);                                   // ~8 fps: the honest 2010 cadence
+}
+function stopPump() { if (pump) clearInterval(pump); pump = null; }
+
+function clearPartner() {
+  stopPump(); hideTyping();
+  S.partner = null;
+  const img = $("#pframe"); if (img.src && img.src.startsWith("blob:")) URL.revokeObjectURL(img.src);
+  img.removeAttribute("src");
+}
+function strangerGone() {
+  session = null; clearPartner();
+  S.status = "idle";
+  sys(STR.strangerLeft);
+  if ($("#ckAuto").checked) window.next();
+}
+
+function showTyping() { S.partnerTyping = true; $("#typing").classList.add("on");
+  clearTimeout(typeHideTimer); typeHideTimer = setTimeout(hideTyping, 2500); }
+function hideTyping() { S.partnerTyping = false; $("#typing").classList.remove("on"); }
+
+// ── the three buttons + the two keys ─────────────────────────────────────────
+window.next = () => {
+  if (session) { const s = session; session = null; s.close(); clearPartner(); }
+  S.status = "seeking"; mm.next(); sys(STR.looking);
+};
+window.stop = () => {
+  if (session) { const s = session; session = null; s.close(); clearPartner(); }
+  S.status = "stopped"; mm.stop(); sys(STR.stopped);
+};
+window.report = () => {
+  if (!session) return;
+  const s = session; session = null; s.close(); clearPartner();
+  S.status = "seeking"; mm.next(); sys(STR.reported);
+};
+window.sendChat = (text) => {
+  if (!session || !session.isOpen() || !text) return;
+  session.send({ t: "chat", text });
+  S.chat.push({ from: "me", text });
+  line("me", STR.youLabel, text);
+};
+window.leaveNet = () => { if (session) session.close(); mm.leave(); };
+
+$("#btnNext").onclick = window.next;
+$("#btnStop").onclick = window.stop;
+$("#btnReport").onclick = window.report;
+$("#ckCam").onchange = () => mm.setWantCam($("#ckCam").checked);
+window.addEventListener("keydown", (e) => {
+  if (e.key === "F9") { e.preventDefault(); window.next(); }
+  else if (e.key === "F8") { e.preventDefault(); window.stop(); }
+});
+
+const say = $("#say");
+say.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault();
+    const t = say.value.trim(); if (t) { window.sendChat(t); say.value = ""; } return; }
+  if (session && session.isOpen() && !typingTimer) {
+    session.send({ t: "typing" });
+    typingTimer = setTimeout(() => (typingTimer = null), 1500);
+  }
+});
+window.addEventListener("beforeunload", () => window.leaveNet());
+
+// entering the room IS the game: start seeking at once (the 2010 way)
+S.status = "seeking"; mm.start(); sys(STR.looking);
+setInterval(() => { S.usersOnline = mm.count(); $("#online").textContent = STR.usersOnline(S.usersOnline); }, 2000);
+</script></body></html>
