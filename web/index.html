@@ -312,7 +312,8 @@ window.sendChat = (text) => {
   S.chat.push({ from: "me", text });
   line("me", STR.youLabel, text);
 };
-window.leaveNet = () => { if (session) session.close(); mm.leave(); };
+let leftNet = false;
+window.leaveNet = () => { if (leftNet) return; leftNet = true; if (session) session.close(); mm.leave(); };
 
 $("#btnNext").onclick = window.next;
 $("#btnStop").onclick = window.stop;
@@ -333,7 +334,12 @@ say.addEventListener("keydown", (e) => {
     typingTimer = setTimeout(() => (typingTimer = null), 1500);
   }
 });
+// say goodbye on EVERY way out — beforeunload alone often loses the bye (a
+// closed tab then haunts the count as a ghost for the presence TTL). pagehide
+// fires more reliably, mobile included; a bfcache park (persisted) is not a
+// departure, so that one keeps its seat.
 window.addEventListener("beforeunload", () => window.leaveNet());
+window.addEventListener("pagehide", (e) => { if (!e.persisted) window.leaveNet(); });
 
 // entering the room IS the game: start seeking at once (the 2010 way)
 S.status = "seeking"; mm.start(); sys(STR.looking);
